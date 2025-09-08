@@ -9,5 +9,5 @@ export class GeminiDTO implements GeminiInterface{
         this.prompt = prompt;
     }
 
-    public getPrompt():string{return this.prompt};
+    getPrompt():string{return this.prompt};
 }

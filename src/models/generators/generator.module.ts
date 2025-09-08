@@ -2,10 +2,10 @@ import { Module } from "@nestjs/common";
 
 import { GeneratorController } from "./generator.controller";
 import { GeneratorService } from "./generator.service";
-import { GeminiController } from "../gemini/gemini.controller";
+import { GeminiModule } from "../gemini/gemini.module";
 
 @Module({
-    imports: [GeminiController],
+    imports: [GeminiModule],
     providers: [GeneratorService],
     controllers: [GeneratorController],
     exports: [GeneratorService],

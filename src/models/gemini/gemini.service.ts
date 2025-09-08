@@ -1,130 +1,44 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class GeminiService {
   private readonly logger = new Logger(GeminiService.name);
   private generativeModel: GenerativeModel;
 
-  constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY')!;
+  constructor(private readonly configService: ConfigService) { // The constructor should be synchronous.
+    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is not set in the environment variables.');
+    }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const config = {
-      responseModalities: [
-          'IMAGE',
-          'TEXT',
-      ],
-    };
-    const model = 'gemini-2.5-flash-image-preview';
-    const contents = [
-      {
-        role: 'user',
-        parts: [
-          {
-            text: `INSERT_INPUT_HERE`,
-          },
-        ],
-      },
-    ];
-    const response = await ai.models.generateContentStream({
-      model,
-      config,
-      contents,
-    });
-    let fileIndex = 0;
+    // For chat, use 'gemini-pro'. For text only, 'gemini-1.5-flash' or another model of your choice.
+    // The 'gemini-pro' model is suitable for text-only prompts.
+    this.generativeModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  }
 
-    // Para chat, use 'gemini-pro'. Para texto apenas, 'gemini-1.5-flash' ou outro modelo de sua escolha.
-    this.generativeModel = genAI.getGenerativeModel({ model: model });
+  private async getPromptTemplate(): Promise<string> {
+    const templatePath = path.join(__dirname, 'templates', 'curriculum.prompt.template');
+    return fs.readFile(templatePath, 'utf-8');
   }
 
   async generateCurriculum(prompt: string): Promise<string> {
-    let fileIndex = 0;
-    for await (const chunk of response) {
-      if (!chunk.candidates || !chunk.candidates[0].content || !chunk.candidates[0].content.parts) {
-        continue;
-      }
-      if (chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
-        const fileName = `ENTER_FILE_NAME_${fileIndex++}`;
-        const inlineData = chunk.candidates[0].content.parts[0].inlineData;
-        const fileExtension = mime.getExtension(inlineData.mimeType || '');
-        const buffer = Buffer.from(inlineData.data || '', 'base64');
-        saveBinaryFile(`${fileName}.${fileExtension}`, buffer);
-      }
-      else {
-        console.log(chunk.text);
-      }
-    }
-
+    const template = await this.getPromptTemplate();
+    const fullPrompt = template.replace('{{prompt}}', prompt);
 
     try {
-      this.logger.log(`Enviando prompt para o Gemini: "${prompt}"`);
-      const result = await this.generativeModel.generateContent(prompt);
+      this.logger.log(`Sending prompt for curriculum generation...`);
+      const result = await this.generativeModel.generateContent(fullPrompt);
       const response = result.response;
       const text = response.text();
-      this.logger.log('Resposta recebida do Gemini.');
+      this.logger.log('Response received from Gemini.');
       return text;
     } catch (error) {
-      this.logger.error('Erro ao chamar a API do Gemini', error.stack);
-      throw new InternalServerErrorException('Falha ao gerar conteúdo do Gemini.');
-    }
-  }
-
-  function saveBinaryFile(fileName: string, content: Buffer) {
-    writeFile(fileName, content, 'utf8', (err) => {
-      if (err) {
-        console.error(`Error writing file ${fileName}:`, err);
-        return;
-      }
-      console.log(`File ${fileName} saved to file system.`);
-    });
-  }
-}
-
-
-
-
-async function main() {
-  
-  const config = {
-    responseModalities: [
-        'IMAGE',
-        'TEXT',
-    ],
-  };
-  const model = 'gemini-2.5-flash-image-preview';
-  const contents = [
-    {
-      role: 'user',
-      parts: [
-        {
-          text: `INSERT_INPUT_HERE`,
-        },
-      ],
-    },
-  ];
-
-  const response = await ai.models.generateContentStream({
-    model,
-    config,
-    contents,
-  });
-  let fileIndex = 0;
-  for await (const chunk of response) {
-    if (!chunk.candidates || !chunk.candidates[0].content || !chunk.candidates[0].content.parts) {
-      continue;
-    }
-    if (chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
-      const fileName = `ENTER_FILE_NAME_${fileIndex++}`;
-      const inlineData = chunk.candidates[0].content.parts[0].inlineData;
-      const fileExtension = mime.getExtension(inlineData.mimeType || '');
-      const buffer = Buffer.from(inlineData.data || '', 'base64');
-      saveBinaryFile(`${fileName}.${fileExtension}`, buffer);
-    }
-    else {
-      console.log(chunk.text);
+      this.logger.error('Error calling Gemini API', error.stack);
+      throw new InternalServerErrorException('Failed to generate content from Gemini.');
     }
   }
 }
-
-main();
