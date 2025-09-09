@@ -7,8 +7,7 @@ export class GeneratorService{
     constructor(private readonly geminiService: GeminiService){}
 
     async generate(dto: GeneratorDTO): Promise<GeneratorDTO>{
-        const generatedXml = await this.geminiService.generateCurriculum(dto.content);
-        
-        return new GeneratorDTO(generatedXml);
+        const generatedContent = await this.geminiService.generateCurriculum(dto.getPrompt());
+        return new GeneratorDTO(generatedContent);
     }
 }

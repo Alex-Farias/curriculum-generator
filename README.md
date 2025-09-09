@@ -102,3 +102,4 @@ npm i --save @nestjs/config
 npm i --save @google/generative-ai
 npm i --base @google/genai mime
 npm i --save -D @types/node
+npm i --save class-validator class-transformer

@@ -10,8 +10,7 @@ export class GeneratorController{
 
     @Post('curriculum')
     @HttpCode(HttpStatus.OK)
-    @UsePipes(new ValidationPipe({ transform: true }))
-    async generate(@Body() dto: GeneratorDTO): Promise<GeneratorDTO>{
+    async generate(@Body(new ValidationPipe({ transform: true })) dto: GeneratorDTO): Promise<GeneratorDTO>{
         return this.service.generate(dto);
     }
 }

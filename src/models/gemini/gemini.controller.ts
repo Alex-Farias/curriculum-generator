@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { GeminiService } from './gemini.service';
 import { GeminiDTO } from './gemini.dto';
 
@@ -8,7 +8,7 @@ export class GeminiController {
 
   @Post('generate')
   @HttpCode(HttpStatus.OK)
-  async generateText(@Body() generateTextDto: GeminiDTO) {
+  async generateText(@Body(new ValidationPipe({ transform: true })) generateTextDto: GeminiDTO) {
     const { prompt } = generateTextDto;
     const generatedText = await this.geminiService.generateCurriculum(prompt);
     
