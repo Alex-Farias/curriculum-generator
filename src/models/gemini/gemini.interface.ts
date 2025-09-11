@@ -1,3 +1,7 @@
 export interface GeminiInterface{
-    prompt: string;
+    language?: string;
+    enterprise: string;
+    candidate: string;
+    getPrompt(): string;
+    getLanguage(): string;
 }

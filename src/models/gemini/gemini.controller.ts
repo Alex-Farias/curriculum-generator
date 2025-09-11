@@ -8,9 +8,8 @@ export class GeminiController {
 
   @Post('generate')
   @HttpCode(HttpStatus.OK)
-  async generateText(@Body(new ValidationPipe({ transform: true })) generateTextDto: GeminiDTO) {
-    const { prompt } = generateTextDto;
-    const generatedText = await this.geminiService.generateCurriculum(prompt);
+  async generateText(@Body(new ValidationPipe({ transform: true })) dto: GeminiDTO) {
+    const generatedText = await this.geminiService.generateCurriculum(dto);
     
     return {
       success: true,

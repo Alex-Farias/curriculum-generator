@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { GeneratorDTO } from '../generators/generator.dto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -24,15 +25,18 @@ export class GeminiService {
     // This path will resolve correctly whether running from /src (ts-node) or /dist (node)
     const isDist = __dirname.includes(path.sep + 'dist' + path.sep);
     const basePath = isDist ? path.join(__dirname, '..', '..', '..') : path.join(__dirname, '..', '..');
-    const templatePath = path.join(basePath, 'src', 'models', 'generators', 'curriculum.prompt.template');
+    const templatePath = path.join(basePath, 'src', 'templates', 'curriculum.prompt.template');
     return fs.readFile(templatePath, 'utf-8');
   }
 
-  async generateCurriculum(prompt: string): Promise<string> {
-    this.logger.log(`Generating curriculum for prompt: ${prompt}`);
+  async generateCurriculum(dto: GeneratorDTO): Promise<string> {
+    this.logger.log(`Generating curriculum...`);
+    this.logger.log(`Getting prompt values: ${JSON.stringify(dto)}`);
     const template = await this.getPromptTemplate();
-    const fullPrompt = template.replace('{{prompt}}', prompt);
-    this.logger.log(`Full prompt constructed: ${fullPrompt}`);
+    const language = dto.getLanguage();
+    const mainContent = dto.getPrompt();
+    const fullPrompt = template.replace('{{prompt}}', mainContent).replace('{{language}}', language);
+    this.logger.log(`Full prompt constructed.`);
 
     try {
       this.logger.log(`Sending prompt for curriculum generation...`);
