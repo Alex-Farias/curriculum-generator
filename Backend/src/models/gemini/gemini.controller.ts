@@ -9,11 +9,14 @@ export class GeminiController {
   @Post('generate')
   @HttpCode(HttpStatus.OK)
   async generateText(@Body(new ValidationPipe({ transform: true })) dto: GeminiDTO) {
-    const generatedText = await this.geminiService.generateCurriculum(dto);
-    
+    const generated = await this.geminiService.generateCurriculum(dto);
+
+    // If service returned an object with xml and prompt, return the xml for compatibility
+    const responseText = typeof generated === 'string' ? generated : (generated && (generated as any).xml) || '';
+
     return {
       success: true,
-      response: generatedText,
+      response: responseText,
     };
   }
 }

@@ -8,13 +8,14 @@ export default function Home() {
   const [language, setLanguage] = useState("");
   const [enterprise, setEnterprise] = useState("");
   const [candidate, setCandidate] = useState("");
+  const [empTitle, setEmpTitle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setIsLoading(true);
     setError(null);
-    const result = await generateCurriculum(language, enterprise, candidate);
+  const result = await generateCurriculum(language, enterprise, candidate, empTitle);
     setIsLoading(false);
 
     if (!result.success) {
@@ -29,6 +30,16 @@ export default function Home() {
       </header>
 
       <main className="row-start-2 flex flex-col gap-8 items-center">
+        <div className="flex flex-col gap-4">
+          <label htmlFor="empTitle">Title (archive name)</label>
+          <input
+            id="empTitle"
+            type="text"
+            className="border border-gray-300 rounded-md p-2"
+            value={empTitle}
+            onChange={(e) => setEmpTitle(e.target.value)}
+          />
+        </div>
         <div className="flex flex-col gap-4">
           <label htmlFor="language">Language</label>
           <input

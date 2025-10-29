@@ -17,11 +17,17 @@ export class GeneratorController{
     ): Promise<StreamableFile>{
         const fileBuffer = await this.service.generate(dto);
 
+        // Determine filename from dto.empTitle (safe fallback)
+        const rawName = dto.empTitle || 'curriculum';
+        // sanitize filename: remove path separators and control chars
+        const safeName = rawName.replace(/[^a-zA-Z0-9-_\. ]/g, '_').trim() || 'curriculum';
+        const filename = `${safeName}.zip`;
+
         res.set({
-            'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition': 'attachment; filename="curriculum.docx"',
+            'Content-Type': 'application/zip',
+            'Content-Disposition': `attachment; filename="${filename}"`,
         });
-        
+
         return new StreamableFile(fileBuffer);
     }
 }

@@ -7,6 +7,10 @@ export class GeneratorDTO implements GeneratorInterface{
   readonly language?: string;
 
   @IsString()
+  @IsOptional()
+  readonly empTitle?: string;
+
+  @IsString()
   @IsNotEmpty()
   readonly enterprise: string;
 

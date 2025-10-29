@@ -3,16 +3,34 @@ import { GeneratorDTO } from "./generator.dto";
 import { GeminiService } from "../gemini/gemini.service";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ExternalHyperlink } from "docx";
 import { parseStringPromise } from "xml2js";
+import JSZip from 'jszip';
 
 @Injectable()
 export class GeneratorService{
     constructor(private readonly geminiService: GeminiService){}
 
     async generate(dto: GeneratorDTO): Promise<Buffer>{
-        const generatedXml = await this.geminiService.generateCurriculum(dto);
-        
+    // Support for geminiService returning either a string (xml) or an object { xml, prompt }
+        // Build a minimal DTO for Gemini so empTitle is not present in logs/payloads.
+        const geminiPayload = {
+            getLanguage: () => dto.getLanguage(),
+            getPrompt: () => dto.getPrompt(),
+        } as unknown as any;
+
+        const generated: any = await this.geminiService.generateCurriculum(geminiPayload);
+        let generatedXml = '';
+        let promptText = '';
+
+        if (typeof generated === 'string') {
+            generatedXml = generated;
+        } else if (generated && typeof generated === 'object') {
+            // try common property names
+            generatedXml = generated.xml ?? generated.generatedXml ?? generated.text ?? '';
+            promptText = generated.prompt ?? generated.meta?.prompt ?? '';
+        }
+
         // Clean up the XML string from Gemini in case it includes markdown fences
-        const cleanedXml = generatedXml.replace(/```xml\n?|```/g, '').trim();
+        const cleanedXml = (generatedXml || '').replace(/```xml\n?|```/g, '').trim();
 
         const parsedData = await parseStringPromise(cleanedXml, { explicitArray: false, trim: true });
         const resume = parsedData.resume;
@@ -183,6 +201,13 @@ export class GeneratorService{
 
         const doc = new Document({ sections: [{ children }] });
 
-        return Packer.toBuffer(doc);
+        const docBuffer = await Packer.toBuffer(doc);
+
+        const zip = new JSZip();
+        zip.file('curriculum.docx', docBuffer);
+        zip.file('prompt.txt', promptText || '');
+
+        const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+        return zipBuffer;
     }
 }

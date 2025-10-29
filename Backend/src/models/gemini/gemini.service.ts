@@ -29,7 +29,7 @@ export class GeminiService {
     return fs.readFile(templatePath, 'utf-8');
   }
 
-  async generateCurriculum(dto: GeneratorDTO): Promise<string> {
+  async generateCurriculum(dto: GeneratorDTO): Promise<string | { xml: string; prompt: string }> {
     this.logger.log(`Generating curriculum...`);
     this.logger.log(`Getting prompt values: ${JSON.stringify(dto)}`);
     const template = await this.getPromptTemplate();
@@ -44,7 +44,9 @@ export class GeminiService {
       const response = result.response;
       const text = response.text();
       this.logger.log('Response received from Gemini.');
-      return text;
+
+      // Return both the generated XML/text and the prompt used so callers can persist the prompt if needed.
+      return { xml: text, prompt: fullPrompt };
     } catch (error) {
       this.logger.error('Error calling Gemini API', error.stack);
       throw new InternalServerErrorException('Failed to generate content from Gemini.');
